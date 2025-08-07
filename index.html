@@ -1,46 +1,59 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BitCapCha - Embed</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BitCapCha - Sigma</title>
   <style>
     body {
       margin: 0;
       padding: 0;
       background: transparent;
       font-family: Arial, sans-serif;
-    }.bitcapcha-container {
-  width: 300px;
-  height: 80px;
-  background: #f9f9f9;
-  border: 1px solid #d3d3d3;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 10px;
-  cursor: pointer;
-  position: relative;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
-  opacity: 0.5;
-  pointer-events: none;
-  transition: opacity 0.3s;
-}
+    }
 
-.bitcapcha-container.active {
-  opacity: 1;
-  pointer-events: auto;
-}
+    .bitcapcha-container {
+      width: 300px;
+      height: 80px;
+      background: #f9f9f9;
+      border: 1px solid #d3d3d3;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 10px;
+      cursor: pointer;
+      position: relative;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+      opacity: 0.4;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
 
-.bitcapcha-container svg {
-  width: 100%;
-  height: 100%;
-}
+    .bitcapcha-container.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
 
+    .bitcapcha-container svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Honeypot trap */
+    .honeypot {
+      position: absolute;
+      left: -9999px;
+      top: -9999px;
+      opacity: 0;
+    }
   </style>
 </head>
 <body>
-  <div class="bitcapcha-container" id="bitcapcha" onclick="verifyHuman()">
+  <!-- Honeypot trap input (bots will often autofill hidden fields) -->
+  <input type="text" class="honeypot" name="email" autocomplete="off"/>
+
+  <div class="bitcapcha-container" id="bitcapcha" onclick="verifyHuman(event)">
     <svg viewBox="0 0 300 80" xmlns="http://www.w3.org/2000/svg">
       <rect width="100%" height="100%" fill="#f9f9f9" rx="6" ry="6" stroke="#d3d3d3" stroke-width="1"/>
       <rect id="checkbox" x="20" y="25" width="20" height="20" fill="#fff" stroke="#999" stroke-width="2" rx="3" ry="3"/>
@@ -55,40 +68,63 @@
         </text>
       </g>
     </svg>
-  </div>  <script>
+  </div>
+
+  <script>
     let verified = false;
     let ready = false;
+    let mouseMoves = 0;
+    let startTime = 0;
 
+    // Headless and bot fingerprint checks
+    function isSuspiciousEnv() {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const headlessCheck = /headless|phantomjs|selenium/.test(userAgent);
+      const webdriver = navigator.webdriver;
+      const plugins = navigator.plugins.length === 0;
+      const languages = navigator.languages === '';
+      const touchCheck = navigator.maxTouchPoints === 0;
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      const audioCtx = typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined';
+
+      return (
+        headlessCheck || webdriver || plugins || languages || !gl || !audioCtx || touchCheck
+      );
+    }
+
+    // Initialize
     window.addEventListener('load', () => {
       setTimeout(() => {
         document.getElementById('bitcapcha').classList.add('active');
+        startTime = performance.now();
+        document.addEventListener('mousemove', () => mouseMoves++);
         ready = true;
-      }, 1200);
+      }, 1000);
     });
 
-    function verifyHuman() {
+    function verifyHuman(event) {
       if (!ready || verified) return;
 
-      try {
-        const performanceCheck = performance.now();
-        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-        const deviceMemory = navigator.deviceMemory || 0;
-        const hasNoise = typeof AudioContext !== 'undefined';
-        const screenCheck = screen.width > 0 && screen.height > 0;
+      const clickTime = performance.now() - startTime;
+      const honeypot = document.querySelector('.honeypot');
 
-        const likelyHuman = performanceCheck > 0 && screenCheck && hasNoise;
+      // Stronger heuristics for human behavior
+      const likelyHuman = (
+        clickTime > 700 &&
+        mouseMoves > 10 &&
+        honeypot.value === '' &&
+        !isSuspiciousEnv()
+      );
 
-        if (likelyHuman) {
-          document.getElementById('checkmark').setAttribute('d', 'M24 35 l4 4 l8 -8');
-          verified = true;
-          // Post message to parent window
-          window.parent.postMessage({ bitcapcha: true }, '*');
-        } else {
-          alert("Could not verify humanity. Try refreshing.");
-        }
-      } catch (e) {
-        alert("Environment check failed. Possibly automated browser.");
+      if (likelyHuman) {
+        document.getElementById('checkmark').setAttribute('d', 'M24 35 l4 4 l8 -8');
+        verified = true;
+        window.parent.postMessage({ bitcapcha: true }, '*');
+      } else {
+        alert("⚠️ Bot-like behavior detected. Please refresh and try again.");
       }
     }
-  </script></body>
-             </html>
+  </script>
+</body>
+        </html>
