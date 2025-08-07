@@ -1,0 +1,11 @@
+BitCapCha, is a CAPCHA i made when i was bored,
+I use it for some of my projects and today i decided to make it public.
+BitCapCha is a privacy respecting CAPCHA unlike ReCapcha with minimal tracking as 
+possible. and has minimal code if you want to add it use this 
+html code: "<iframe 
+  src="https://abdullahhmoodlol.github.io/BitCapCha/" 
+  width="320" 
+  height="100" 
+  style="border: none;" 
+  sandbox="allow-scripts"
+></iframe>" i doubt anybody will but ok.
