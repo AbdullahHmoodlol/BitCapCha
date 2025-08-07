@@ -1,0 +1,97 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BitCapCha - Private CAPTCHA</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }.bitcapcha-container {
+  width: 300px;
+  height: 80px;
+  background: #f9f9f9;
+  border: 1px solid #d3d3d3;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 10px;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.bitcapcha-container.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.bitcapcha-container svg {
+  width: 100%;
+  height: 100%;
+}
+
+  </style>
+</head>
+<body>
+  <div class="bitcapcha-container" id="bitcapcha" onclick="verifyHuman()">
+    <svg viewBox="0 0 300 80" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="#f9f9f9" rx="6" ry="6" stroke="#d3d3d3" stroke-width="1"/>
+      <rect id="checkbox" x="20" y="25" width="20" height="20" fill="#fff" stroke="#999" stroke-width="2" rx="3" ry="3"/>
+      <path id="checkmark" d="" fill="none" stroke="#2ecc71" stroke-width="2"/>
+      <text x="50" y="40" font-family="Arial, sans-serif" font-size="14" fill="#333" dominant-baseline="middle">
+        I'm not a robot
+      </text>
+      <g transform="translate(240, 20)">
+        <path d="M16 0 L32 8 L28 28 L16 32 L4 28 L0 8 Z" fill="#e0e0e0" stroke="#bbb" stroke-width="1"/>
+        <text x="16" y="22" font-family="Arial Black, sans-serif" font-size="12" text-anchor="middle" fill="#555">
+          B
+        </text>
+      </g>
+    </svg>
+  </div>  <script>
+    let verified = false;
+    let ready = false;
+
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.getElementById('bitcapcha').classList.add('active');
+        ready = true;
+      }, 1200); // Simulate a load delay to defeat naive bots
+    });
+
+    function verifyHuman() {
+      if (!ready || verified) return;
+
+      // Enhanced passive detection logic (client-side only, nothing stored)
+      try {
+        const performanceCheck = performance.now();
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        const deviceMemory = navigator.deviceMemory || 0;
+        const hasNoise = typeof AudioContext !== 'undefined';
+        const screenCheck = screen.width > 0 && screen.height > 0;
+
+        // Very loose heuristics just to confirm it's a browser
+        const likelyHuman = performanceCheck > 0 && screenCheck && hasNoise;
+
+        if (likelyHuman) {
+          document.getElementById('checkmark').setAttribute('d', 'M24 35 l4 4 l8 -8');
+          verified = true;
+          alert("Human verified! ✅");
+        } else {
+          alert("Could not verify humanity. Try refreshing.");
+        }
+      } catch (e) {
+        alert("Environment check failed. Possibly automated browser.");
+      }
+    }
+  </script></body>
+  </html>
