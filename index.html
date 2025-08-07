@@ -1,17 +1,14 @@
 <!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>BitCapCha - Private CAPTCHA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BitCapCha - Embed</title>
   <style>
-    html, body {
+    body {
       margin: 0;
       padding: 0;
-      height: 100%;
-      background: white;
+      background: transparent;
       font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
     }.bitcapcha-container {
   width: 300px;
   height: 80px;
@@ -27,6 +24,7 @@
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
   opacity: 0.5;
   pointer-events: none;
+  transition: opacity 0.3s;
 }
 
 .bitcapcha-container.active {
@@ -65,13 +63,12 @@
       setTimeout(() => {
         document.getElementById('bitcapcha').classList.add('active');
         ready = true;
-      }, 1200); // Simulate a load delay to defeat naive bots
+      }, 1200);
     });
 
     function verifyHuman() {
       if (!ready || verified) return;
 
-      // Enhanced passive detection logic (client-side only, nothing stored)
       try {
         const performanceCheck = performance.now();
         const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -79,13 +76,13 @@
         const hasNoise = typeof AudioContext !== 'undefined';
         const screenCheck = screen.width > 0 && screen.height > 0;
 
-        // Very loose heuristics just to confirm it's a browser
         const likelyHuman = performanceCheck > 0 && screenCheck && hasNoise;
 
         if (likelyHuman) {
           document.getElementById('checkmark').setAttribute('d', 'M24 35 l4 4 l8 -8');
           verified = true;
-          alert("Human verified! ✅");
+          // Post message to parent window
+          window.parent.postMessage({ bitcapcha: true }, '*');
         } else {
           alert("Could not verify humanity. Try refreshing.");
         }
@@ -94,4 +91,4 @@
       }
     }
   </script></body>
-  </html>
+             </html>
