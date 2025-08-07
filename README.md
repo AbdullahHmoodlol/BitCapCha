@@ -8,4 +8,15 @@ html code: "<iframe
   height="100" 
   style="border: none;" 
   sandbox="allow-scripts"
-></iframe>" i doubt anybody will but ok.
+></iframe>" i doubt anybody will but ok. and for listening to verification use this js code: "<script>
+  window.addEventListener("message", function(event) {
+
+if (event.origin !== "https://abdullahhmoodlol.github.io/BitCapCha/") return;
+
+  if (event.data && event.data.bitcapcha === true) {
+      console.log("✅ BitCapCha passed!");
+      // Example: Enable form submit
+      document.querySelector("#submitButton").disabled = false;
+    }
+  });
+</script>"
