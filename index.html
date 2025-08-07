@@ -1,106 +1,144 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BitCapCha - Sigma</title>
+  <title>BitCapCha - Sigma++</title>
   <style>
     body {
       margin: 0;
       padding: 0;
       background: transparent;
       font-family: Arial, sans-serif;
-    }
+    }.bitcapcha-container {
+  width: 300px;
+  height: 80px;
+  background: #f9f9f9;
+  border: 1px solid #d3d3d3;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 10px;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+  opacity: 0.4;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  user-select: none;
+}
 
-    .bitcapcha-container {
-      width: 300px;
-      height: 80px;
-      background: #f9f9f9;
-      border: 1px solid #d3d3d3;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      padding: 10px;
-      cursor: pointer;
-      position: relative;
-      box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
-      opacity: 0.4;
-      pointer-events: none;
-      transition: opacity 0.3s;
-    }
+.bitcapcha-container.active {
+  opacity: 1;
+  pointer-events: auto;
+}
 
-    .bitcapcha-container.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
+.bitcapcha-container svg {
+  width: 100%;
+  height: 100%;
+}
 
-    .bitcapcha-container svg {
-      width: 100%;
-      height: 100%;
-    }
+.honeypot, .invisible-field {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  opacity: 0;
+}
 
-    /* Honeypot trap */
-    .honeypot {
-      position: absolute;
-      left: -9999px;
-      top: -9999px;
-      opacity: 0;
-    }
+.decoy-button {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  left: -1000px;
+  top: -1000px;
+}
+
+#status {
+  margin-top: 10px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  color: #555;
+}
+
   </style>
 </head>
 <body>
-  <!-- Honeypot trap input (bots will often autofill hidden fields) -->
   <input type="text" class="honeypot" name="email" autocomplete="off"/>
-
-  <div class="bitcapcha-container" id="bitcapcha" onclick="verifyHuman(event)">
+  <input type="text" class="invisible-field" name="username" autocomplete="off"/>
+  <div class="decoy-button" onclick="botTrap()">Fake Click</div>  <div class="bitcapcha-container" id="bitcapcha" onclick="verifyHuman(event)">
     <svg viewBox="0 0 300 80" xmlns="http://www.w3.org/2000/svg">
       <rect width="100%" height="100%" fill="#f9f9f9" rx="6" ry="6" stroke="#d3d3d3" stroke-width="1"/>
       <rect id="checkbox" x="20" y="25" width="20" height="20" fill="#fff" stroke="#999" stroke-width="2" rx="3" ry="3"/>
-      <path id="checkmark" d="" fill="none" stroke="#2ecc71" stroke-width="2"/>
-      <text x="50" y="40" font-family="Arial, sans-serif" font-size="14" fill="#333" dominant-baseline="middle">
-        I'm not a robot
-      </text>
+      <path id="checkmark" d="" fill="none" stroke="#2ecc71" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="50" y="40" font-family="Arial, sans-serif" font-size="14" fill="#333" dominant-baseline="middle">I'm not a robot</text>
       <g transform="translate(240, 20)">
         <path d="M16 0 L32 8 L28 28 L16 32 L4 28 L0 8 Z" fill="#e0e0e0" stroke="#bbb" stroke-width="1"/>
-        <text x="16" y="22" font-family="Arial Black, sans-serif" font-size="12" text-anchor="middle" fill="#555">
-          B
-        </text>
+        <text x="16" y="22" font-family="Arial Black, sans-serif" font-size="12" text-anchor="middle" fill="#555">B</text>
       </g>
     </svg>
-  </div>
-
-  <script>
+  </div>  <div id="status"></div>  <script>
     let verified = false;
     let ready = false;
     let mouseMoves = 0;
+    let touchMoves = 0;
+    let keyStrokes = 0;
+    let scrolls = 0;
     let startTime = 0;
+    let entropy = [];
 
-    // Headless and bot fingerprint checks
+    function botTrap() {
+      alert('⚠️ Bot trap activated. Session terminated.');
+      throw new Error("Bot detected.");
+    }
+
+    function isMobile() {
+      return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+    }
+
     function isSuspiciousEnv() {
-      const userAgent = navigator.userAgent.toLowerCase();
-      const headlessCheck = /headless|phantomjs|selenium/.test(userAgent);
-      const webdriver = navigator.webdriver;
-      const plugins = navigator.plugins.length === 0;
-      const languages = navigator.languages === '';
-      const touchCheck = navigator.maxTouchPoints === 0;
+      const ua = navigator.userAgent.toLowerCase();
+      const suspiciousUA = /headless|phantomjs|selenium/.test(ua);
+      const webDriver = navigator.webdriver;
+      const noPlugins = navigator.plugins.length === 0;
+      const noLanguages = !navigator.languages || navigator.languages.length === 0;
+
       const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-      const audioCtx = typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined';
+      const ctx = canvas.getContext('2d');
+      ctx.fillText('hello', 0, 0);
+      const fingerprint = canvas.toDataURL();
+
+      const audioSupported = typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined';
 
       return (
-        headlessCheck || webdriver || plugins || languages || !gl || !audioCtx || touchCheck
+        suspiciousUA || webDriver || noLanguages || !ctx || !audioSupported || fingerprint.length < 1000
       );
     }
 
-    // Initialize
     window.addEventListener('load', () => {
       setTimeout(() => {
         document.getElementById('bitcapcha').classList.add('active');
         startTime = performance.now();
-        document.addEventListener('mousemove', () => mouseMoves++);
+
+        document.addEventListener('mousemove', e => {
+          mouseMoves++;
+          entropy.push({ x: e.clientX, y: e.clientY, t: Date.now() });
+        });
+
+        document.addEventListener('touchmove', e => {
+          touchMoves++;
+          if (e.touches.length > 0) {
+            entropy.push({ x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() });
+          }
+        });
+
+        document.addEventListener('keydown', e => {
+          keyStrokes++;
+          entropy.push({ key: e.key, t: Date.now() });
+        });
+
+        document.addEventListener('scroll', () => scrolls++);
         ready = true;
-      }, 1000);
+      }, 1000 + Math.floor(Math.random() * 1000));
     });
 
     function verifyHuman(event) {
@@ -108,23 +146,36 @@
 
       const clickTime = performance.now() - startTime;
       const honeypot = document.querySelector('.honeypot');
+      const invisible = document.querySelector('.invisible-field');
+      const status = document.getElementById('status');
+      const uniqueEntropy = new Set(entropy.map(e => JSON.stringify(e))).size;
 
-      // Stronger heuristics for human behavior
-      const likelyHuman = (
-        clickTime > 700 &&
-        mouseMoves > 10 &&
-        honeypot.value === '' &&
-        !isSuspiciousEnv()
-      );
+      let isHuman = false;
+      const cleanEnv = !isSuspiciousEnv() && honeypot.value === '' && invisible.value === '';
 
-      if (likelyHuman) {
-        document.getElementById('checkmark').setAttribute('d', 'M24 35 l4 4 l8 -8');
+      if (isMobile()) {
+        isHuman = cleanEnv && (
+          touchMoves >= 1 || clickTime > 800 || uniqueEntropy >= 3
+        );
+      } else {
+        isHuman = cleanEnv && (
+          (mouseMoves >= 3 && clickTime > 500) ||
+          (keyStrokes > 0 && clickTime > 400) ||
+          (scrolls > 0 && clickTime > 600) ||
+          uniqueEntropy >= 8
+        );
+      }
+
+      if (isHuman) {
+        document.getElementById('checkmark').setAttribute('d', 'M25 35 L30 40 L40 28');
         verified = true;
+        status.textContent = "✅ Verified: You're human.";
+        status.style.color = "#2ecc71";
         window.parent.postMessage({ bitcapcha: true }, '*');
       } else {
-        alert("⚠️ Bot-like behavior detected. Please refresh and try again.");
+        status.textContent = "⚠️ Bot-like behavior or insufficient interaction. Please try again.";
+        status.style.color = "#e67e22";
       }
     }
-  </script>
-</body>
-        </html>
+  </script></body>
+  </html>
